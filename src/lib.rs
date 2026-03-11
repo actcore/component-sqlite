@@ -1,4 +1,5 @@
 use act_sdk::prelude::*;
+use base64::Engine;
 use rusqlite::{Connection, params_from_iter, types::Value};
 use std::sync::Mutex;
 
@@ -211,22 +212,6 @@ fn sqlite_value_to_json(val: &Value) -> serde_json::Value {
         Value::Integer(i) => serde_json::json!(i),
         Value::Real(f) => serde_json::json!(f),
         Value::Text(s) => serde_json::json!(s),
-        Value::Blob(b) => serde_json::json!(base64_encode(b)),
+        Value::Blob(b) => serde_json::json!(base64::engine::general_purpose::STANDARD.encode(b)),
     }
-}
-
-fn base64_encode(data: &[u8]) -> String {
-    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut result = String::with_capacity((data.len() + 2) / 3 * 4);
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0] as u32;
-        let b1 = *chunk.get(1).unwrap_or(&0) as u32;
-        let b2 = *chunk.get(2).unwrap_or(&0) as u32;
-        let triple = (b0 << 16) | (b1 << 8) | b2;
-        result.push(CHARS[(triple >> 18 & 0x3F) as usize] as char);
-        result.push(CHARS[(triple >> 12 & 0x3F) as usize] as char);
-        if chunk.len() > 1 { result.push(CHARS[(triple >> 6 & 0x3F) as usize] as char); } else { result.push('='); }
-        if chunk.len() > 2 { result.push(CHARS[(triple & 0x3F) as usize] as char); } else { result.push('='); }
-    }
-    result
 }
