@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout component
+        uses: actions/checkout@v4
+        with:
+          path: components/sqlite
+
+      - name: Checkout act-sdk-rs
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-sdk-rs
+          path: act-sdk-rs
+
+      - name: Checkout act-wit
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-wit
+          path: act-wit
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-wasip2
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            components/sqlite/target
+          key: ${{ runner.os }}-cargo-sqlite-${{ hashFiles('components/sqlite/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-sqlite-
+
+      - name: Install wasi-sdk
+        run: |
+          curl -LO https://github.com/aspect-build/aspect-wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar xzf wasi-sdk-25.0-x86_64-linux.tar.gz
+          echo "WASI_SDK_PATH=$PWD/wasi-sdk-25.0-x86_64-linux" >> $GITHUB_ENV
+
+      - name: Cargo check
+        working-directory: components/sqlite
+        run: cargo check
+
+  build:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout component
+        uses: actions/checkout@v4
+        with:
+          path: components/sqlite
+
+      - name: Checkout act-sdk-rs
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-sdk-rs
+          path: act-sdk-rs
+
+      - name: Checkout act-wit
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-wit
+          path: act-wit
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-wasip2
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            components/sqlite/target
+          key: ${{ runner.os }}-cargo-sqlite-${{ hashFiles('components/sqlite/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-sqlite-
+
+      - name: Install wasi-sdk
+        run: |
+          curl -LO https://github.com/aspect-build/aspect-wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar xzf wasi-sdk-25.0-x86_64-linux.tar.gz
+          echo "WASI_SDK_PATH=$PWD/wasi-sdk-25.0-x86_64-linux" >> $GITHUB_ENV
+
+      - name: Build WASM component
+        working-directory: components/sqlite
+        run: cargo build --release
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: component_sqlite.wasm
+          path: components/sqlite/target/wasm32-wasip2/release/*.wasm
+
+  e2e:
+    name: E2E Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout component
+        uses: actions/checkout@v4
+        with:
+          path: components/sqlite
+
+      - name: Checkout act-sdk-rs
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-sdk-rs
+          path: act-sdk-rs
+
+      - name: Checkout act-wit
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-wit
+          path: act-wit
+
+      - name: Checkout act-host
+        uses: actions/checkout@v4
+        with:
+          repository: actcore/act-host
+          path: act-host
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-wasip2
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            components/sqlite/target
+            act-host/target
+          key: ${{ runner.os }}-e2e-sqlite-${{ hashFiles('components/sqlite/Cargo.lock', 'act-host/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-e2e-sqlite-
+
+      - name: Install wasi-sdk
+        run: |
+          curl -LO https://github.com/aspect-build/aspect-wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
+          tar xzf wasi-sdk-25.0-x86_64-linux.tar.gz
+          echo "WASI_SDK_PATH=$PWD/wasi-sdk-25.0-x86_64-linux" >> $GITHUB_ENV
+
+      - name: Build WASM component
+        working-directory: components/sqlite
+        run: cargo build --release
+
+      - name: Build act-host
+        working-directory: act-host
+        run: cargo build --release
+
+      - name: Run e2e test
+        run: |
+          WASM=$(ls components/sqlite/target/wasm32-wasip2/release/*.wasm | head -1)
+          HOST=act-host/target/release/act-host
+
+          echo "=== Testing execute (CREATE TABLE) ==="
+          OUTPUT=$($HOST call "$WASM" execute --args '{"sql": "CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)"}' --config '{"database_path": "/tmp/test_e2e.db"}')
+          echo "$OUTPUT"
+          echo "PASS: CREATE TABLE"
+
+          echo "=== Testing execute (INSERT) ==="
+          OUTPUT=$($HOST call "$WASM" execute --args '{"sql": "INSERT INTO test (name) VALUES (?)", "params": ["hello"]}' --config '{"database_path": "/tmp/test_e2e.db"}')
+          echo "$OUTPUT"
+          echo "PASS: INSERT"
+
+          echo "=== Testing query (SELECT) ==="
+          OUTPUT=$($HOST call "$WASM" query --args '{"sql": "SELECT * FROM test"}' --config '{"database_path": "/tmp/test_e2e.db"}')
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "hello" || (echo "FAIL: expected 'hello' in query results" && exit 1)
+          echo "PASS: SELECT"

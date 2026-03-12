@@ -99,6 +99,7 @@ name = "component-sqlite"
 version = "0.1.0"
 dependencies = [
  "act-sdk",
+ "base64",
  "rusqlite",
  "schemars",
  "serde",
