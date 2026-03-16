@@ -8,6 +8,9 @@ baseurl := "http://" + addr
 build:
     CC={{cc}} cargo build --target wasm32-wasip2 --release
 
+clippy:
+    CC={{cc}} cargo clippy --target wasm32-wasip2 -- -D warnings
+
 test:
     #!/usr/bin/env bash
     DB_DIR=$(mktemp -d)

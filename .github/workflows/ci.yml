@@ -19,7 +19,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-wasip2
-      - uses: bytecodealliance/setup-wasi-sdk-action@v1
+      - uses: robinraju/release-downloader@v1
+        with:
+          repository: WebAssembly/wasi-sdk
+          latest: true
+          fileName: "wasi-sdk-*-x86_64-linux.deb"
+          out-file-path: /tmp
+      - run: sudo dpkg -i /tmp/wasi-sdk-*-x86_64-linux.deb
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@just
       - run: just build
