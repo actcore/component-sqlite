@@ -1,5 +1,5 @@
 # Ensure table exists
-POST {{host}}/tools/execute
+POST {{baseurl}}/tools/execute
 {
   "arguments": {"sql": "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL)"},
   "config": {"database_path": "{{db_path}}"}
@@ -7,7 +7,7 @@ POST {{host}}/tools/execute
 HTTP 200
 
 # Describe it
-POST {{host}}/tools/describe-table
+POST {{baseurl}}/tools/describe-table
 {
   "arguments": {"table": "products"},
   "config": {"database_path": "{{db_path}}"}
@@ -18,7 +18,7 @@ jsonpath "$.content[0].data" contains "\"name\""
 jsonpath "$.content[0].data" contains "\"price\""
 
 # Non-existent table
-POST {{host}}/tools/describe-table
+POST {{baseurl}}/tools/describe-table
 {
   "arguments": {"table": "nonexistent"},
   "config": {"database_path": "{{db_path}}"}

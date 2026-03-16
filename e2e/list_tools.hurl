@@ -1,8 +1,8 @@
-POST {{host}}/tools
+POST {{baseurl}}/tools
 HTTP 200
 [Asserts]
-jsonpath "$.tools[*].name" includes "query"
-jsonpath "$.tools[*].name" includes "execute"
-jsonpath "$.tools[*].name" includes "list-tables"
-jsonpath "$.tools[*].name" includes "describe-table"
-jsonpath "$.tools[*].name" includes "execute-batch"
+jsonpath "$.tools[*].name" contains "query"
+jsonpath "$.tools[*].name" contains "execute"
+jsonpath "$.tools[*].name" contains "list-tables"
+jsonpath "$.tools[*].name" contains "describe-table"
+jsonpath "$.tools[*].name" contains "execute-batch"

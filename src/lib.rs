@@ -48,7 +48,7 @@ mod component {
         #[doc = "Query parameters as JSON array (optional)"] params: Option<Vec<serde_json::Value>>,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<String> {
-        let path = ctx.config().database_path.clone();
+        let path = ctx.metadata().database_path.clone();
         with_db(&path, |conn| {
             let param_values = json_params_to_sqlite(params.as_deref())?;
             let mut stmt = conn.prepare(&sql)
@@ -83,7 +83,7 @@ mod component {
         #[doc = "Statement parameters as JSON array (optional)"] params: Option<Vec<serde_json::Value>>,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<String> {
-        let path = ctx.config().database_path.clone();
+        let path = ctx.metadata().database_path.clone();
         with_db(&path, |conn| {
             let param_values = json_params_to_sqlite(params.as_deref())?;
             let affected = conn.execute(&sql, params_from_iter(param_values.iter()))
@@ -98,7 +98,7 @@ mod component {
     /// List all tables in the database.
     #[act_tool(description = "List all tables in the SQLite database", read_only)]
     fn list_tables(ctx: &mut ActContext<Config>) -> ActResult<String> {
-        let path = ctx.config().database_path.clone();
+        let path = ctx.metadata().database_path.clone();
         with_db(&path, |conn| {
             let mut stmt = conn.prepare(
                 "SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' ORDER BY name"
@@ -124,7 +124,7 @@ mod component {
         #[doc = "Table name to describe"] table: String,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<String> {
-        let path = ctx.config().database_path.clone();
+        let path = ctx.metadata().database_path.clone();
         with_db(&path, |conn| {
             // Validate table name exists
             let exists: bool = conn.query_row(
@@ -182,7 +182,7 @@ mod component {
         #[doc = "SQL statements separated by semicolons"] sql: String,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<String> {
-        let path = ctx.config().database_path.clone();
+        let path = ctx.metadata().database_path.clone();
         with_db(&path, |conn| {
             conn.execute_batch(&sql)
                 .map_err(|e| ActError::invalid_args(format!("SQL error: {e}")))?;
