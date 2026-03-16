@@ -19,6 +19,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-wasip2
+      - uses: bytecodealliance/setup-wasi-sdk-action@v1
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@just
       - run: just build
