@@ -2,7 +2,7 @@
 POST {{baseurl}}/tools/execute
 {
   "arguments": {"sql": "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, age INTEGER)"},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP 200
 
@@ -10,7 +10,7 @@ HTTP 200
 POST {{baseurl}}/tools/execute
 {
   "arguments": {"sql": "INSERT INTO users (name, age) VALUES (?1, ?2)", "params": ["Alice", 30]},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP 200
 [Asserts]
@@ -20,7 +20,7 @@ jsonpath "$.content[0].data" contains "\"rows_affected\":1"
 POST {{baseurl}}/tools/query
 {
   "arguments": {"sql": "SELECT * FROM users"},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP 200
 [Asserts]

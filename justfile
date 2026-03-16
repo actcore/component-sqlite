@@ -1,6 +1,6 @@
 wasm := "target/wasm32-wasip2/release/component_sqlite.wasm"
 act := env("ACT", "act")
-port := "3456"
+port := `python3 -c 'import socket; s=socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
 addr := "[::1]:" + port
 baseurl := "http://" + addr
 
@@ -9,7 +9,9 @@ build:
 
 test:
     #!/usr/bin/env bash
-    {{act}} serve {{wasm}} --listen "{{addr}}" &
-    trap "kill $!" EXIT
+    DB_DIR=$(mktemp -d)
+    DB_PATH="$DB_DIR/test.db"
+    {{act}} serve {{wasm}} --listen "{{addr}}" --allow-dir "/data:$DB_DIR" &
+    trap "kill $!; rm -rf $DB_DIR" EXIT
     npx wait-on {{baseurl}}/info
-    hurl --test --variable "baseurl={{baseurl}}" e2e/*.hurl
+    hurl --test --variable "baseurl={{baseurl}}" --variable "db_path=/data/test.db" e2e/*.hurl

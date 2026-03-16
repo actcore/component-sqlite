@@ -2,7 +2,7 @@
 POST {{baseurl}}/tools/execute
 {
   "arguments": {"sql": "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL)"},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP 200
 
@@ -10,7 +10,7 @@ HTTP 200
 POST {{baseurl}}/tools/describe-table
 {
   "arguments": {"table": "products"},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP 200
 [Asserts]
@@ -21,7 +21,7 @@ jsonpath "$.content[0].data" contains "\"price\""
 POST {{baseurl}}/tools/describe-table
 {
   "arguments": {"table": "nonexistent"},
-  "config": {"database_path": "{{db_path}}"}
+  "metadata": {"database_path": "{{db_path}}"}
 }
 HTTP *
 [Asserts]
