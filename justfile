@@ -5,6 +5,12 @@ port := `python3 -c 'import socket; s=socket.socket(socket.AF_INET, socket.SOCK_
 addr := "[::1]:" + port
 baseurl := "http://" + addr
 
+init:
+    wit-deps
+
+setup: init
+    prek install
+
 build:
     CC={{cc}} cargo build --target wasm32-wasip2 --release
 

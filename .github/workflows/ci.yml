@@ -14,11 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: moonrepo/setup-rust@v1
         with:
-          submodules: true
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
+          channel: nightly
           targets: wasm32-wasip2
+          bins: wit-deps-cli, just
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: robinraju/release-downloader@v1
         with:
           repository: WebAssembly/wasi-sdk
@@ -26,8 +28,7 @@ jobs:
           fileName: "wasi-sdk-*-x86_64-linux.deb"
           out-file-path: /tmp
       - run: sudo dpkg -i /tmp/wasi-sdk-*-x86_64-linux.deb
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@just
+      - run: just init
       - run: just build
       - uses: actions/upload-artifact@v7
         with:
@@ -45,10 +46,11 @@ jobs:
           name: component.wasm
           path: target/wasm32-wasip2/release/
       - uses: actcore/act-cli/setup@main
-      - uses: taiki-e/install-action@just
-      - uses: taiki-e/cache-cargo-install-action@v3
+      - uses: moonrepo/setup-rust@v1
         with:
-          tool: hurl
+          bins: just, hurl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: just test
 
   fmt:
@@ -56,7 +58,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: moonrepo/setup-rust@v1
         with:
+          channel: nightly
           components: rustfmt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo fmt -- --check
