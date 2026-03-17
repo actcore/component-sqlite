@@ -53,6 +53,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: just test
 
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: moonrepo/setup-rust@v1
+        with:
+          channel: nightly
+          targets: wasm32-wasip2
+          components: clippy
+          bins: wit-deps-cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: robinraju/release-downloader@v1
+        with:
+          repository: WebAssembly/wasi-sdk
+          latest: true
+          fileName: "wasi-sdk-*-x86_64-linux.deb"
+          out-file-path: /tmp
+      - run: sudo dpkg -i /tmp/wasi-sdk-*-x86_64-linux.deb
+      - run: wit-deps
+      - run: CC=/opt/wasi-sdk/bin/clang cargo clippy --target wasm32-wasip2 -- -D warnings
+
   fmt:
     name: Format
     runs-on: ubuntu-latest
